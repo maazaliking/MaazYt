@@ -109,18 +109,24 @@ def download_video(video_url, quality, start_time, end_time, download_id):
             'no_warnings': True,
         }
         
-        # Add time segment if specified
+        # Add time segment using postprocessor arguments
         start_seconds = parse_time_to_seconds(start_time)
         end_seconds = parse_time_to_seconds(end_time)
         
         if start_seconds > 0 or (end_seconds > 0 and end_seconds > start_seconds):
-            # Use external downloader to handle time segments if possible
+            # Use postprocessor options instead of download_ranges
+            pp_args = []
+            
+            if start_seconds > 0:
+                pp_args.extend(['-ss', str(start_seconds)])
+            
             if end_seconds > 0 and end_seconds > start_seconds:
-                ydl_opts['download_ranges'] = lambda _: [{'start_time': start_seconds, 'end_time': end_seconds}]
-                ydl_opts['force_keyframes_at_cuts'] = True
-            elif start_seconds > 0:
-                ydl_opts['download_ranges'] = lambda _: [{'start_time': start_seconds}]
-                ydl_opts['force_keyframes_at_cuts'] = True
+                pp_args.extend(['-to', str(end_seconds)])
+            
+            if pp_args:
+                ydl_opts['postprocessor_args'] = {
+                    'ffmpeg': pp_args
+                }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             downloads[download_id]['status'] = 'downloading'
