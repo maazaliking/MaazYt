@@ -1,439 +1,164 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Video Downloader</title>
-    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container py-4">
-        <!-- Header -->
-        <header class="pb-3 mb-4 border-bottom">
-            <div class="d-flex align-items-center text-primary">
-                <i class="bi bi-youtube display-5 me-2"></i>
-                <h1 class="display-6 fw-bold">YouTube Video Downloader</h1>
-            </div>
+    <div class="container">
+        <header class="text-center my-5">
+            <h1>YouTube Video Downloader</h1>
+            <p class="lead">Download YouTube videos in your preferred quality with optional time segment selection</p>
         </header>
 
-        <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
-        <!-- Main Content -->
-        <div class="form-container">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-arrow-down-circle me-2"></i>Download YouTube Video</h5>
-                </div>
-                <div class="card-body">
-                    <form action="{{ url_for('download') }}" method="post" id="download-form">
-                        <div class="mb-3">
-                            <label for="video_url" class="form-label">YouTube Video URL</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                                <input type="url" class="form-control" id="video_url" name="video_url" 
-                                       placeholder="https://www.youtube.com/watch?v=..." required>
-                            </div>
-                            <div class="form-text">Enter the full URL of the YouTube video you want to download</div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <label for="quality" class="form-label">Video Quality</label>
-                                <select class="form-select" id="quality" name="quality">
-                                    <option value="1080p">1080p (Full HD)</option>
-                                    <option value="720p" selected>720p (HD)</option>
-                                    <option value="360p">360p (SD)</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="start_time" class="form-label">Start Time</label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="start_time" name="start_time" 
-                                           value="00:00:00" placeholder="00:00:00">
-                                    <span class="input-group-text"><i class="bi bi-hourglass-top"></i></span>
-                                </div>
-                                <div class="form-text">Format: HH:MM:SS or MM:SS</div>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="end_time" class="form-label">End Time</label>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="end_time" name="end_time" 
-                                           placeholder="Video end">
-                                    <span class="input-group-text"><i class="bi bi-hourglass-bottom"></i></span>
-                                </div>
-                                <div class="form-text">Format: HH:MM:SS or MM:SS</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Quick time segment presets -->
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <label class="form-label">Quick Presets</label>
-                                <div class="d-flex gap-2 flex-wrap">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm preset-btn" 
-                                            data-duration="30">30 sec</button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm preset-btn" 
-                                            data-duration="60">1 min</button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm preset-btn" 
-                                            data-duration="300">5 min</button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm preset-btn" 
-                                            data-duration="600">10 min</button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="preset-full">Full Video</button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="preset-custom" 
-                                            data-bs-toggle="collapse" data-bs-target="#customPresetCollapse" 
-                                            aria-expanded="false" aria-controls="customPresetCollapse">
-                                        Custom...
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Custom preset collapse section -->
-                        <div class="collapse mb-3" id="customPresetCollapse">
-                            <div class="card card-body bg-dark">
-                                <div class="row align-items-end">
-                                    <div class="col-md-4">
-                                        <label for="custom-minutes" class="form-label">Minutes</label>
-                                        <input type="number" class="form-control" id="custom-minutes" min="0" step="1" value="0">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="custom-seconds" class="form-label">Seconds</label>
-                                        <input type="number" class="form-control" id="custom-seconds" min="0" max="59" step="1" value="0">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <button type="button" class="btn btn-primary w-100" id="apply-custom-preset">Apply</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-3">
-                        </div>
-
-                        <button type="submit" class="btn btn-primary" id="download-btn">
-                            <i class="bi bi-download me-2"></i>Download Video
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Video Preview Area -->
-            <div id="video-preview" class="d-none">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="bi bi-eye me-2"></i>Video Preview</h5>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form action="{{ url_for('download') }}" method="post">
+                    <div class="mb-3">
+                        <label for="video_url" class="form-label">YouTube Video URL</label>
+                        <input type="text" class="form-control" id="video_url" name="video_url" placeholder="https://www.youtube.com/watch?v=..." required>
                     </div>
-                    <div class="card-body text-center">
-                        <div id="video-info" class="mb-3"></div>
-                        <div id="thumbnail-container" class="mb-3"></div>
+                    
+                    <div id="video-info" class="mb-3 d-none">
+                        <div class="alert alert-info">
+                            <strong>Video Title:</strong> <span id="video-title">Loading...</span><br>
+                            <strong>Duration:</strong> <span id="video-duration">Loading...</span>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Instructions -->
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>How to Use</h5>
-                </div>
-                <div class="card-body">
-                    <ol class="list-group list-group-numbered mb-0">
-                        <li class="list-group-item">Copy the YouTube video URL from your browser</li>
-                        <li class="list-group-item">Paste the URL in the input field above</li>
-                        <li class="list-group-item">Select your preferred video quality (1080p, 720p, or 360p)</li>
-                        <li class="list-group-item">Optionally, specify start and end times for the video segment you want to download</li>
-                        <li class="list-group-item">Click the Download button and wait for the process to complete</li>
-                    </ol>
-                </div>
+                    <div class="mb-3">
+                        <label for="quality" class="form-label">Video Quality</label>
+                        <select class="form-select" id="quality" name="quality">
+                            <option value="1080p">1080p HD</option>
+                            <option value="720p" selected>720p HD</option>
+                            <option value="360p">360p SD</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Time Segment</label>
+                        <div class="row g-2">
+                            <div class="col-md-5">
+                                <label for="start_time" class="form-label small">Start Time (HH:MM:SS)</label>
+                                <input type="text" class="form-control" id="start_time" name="start_time" placeholder="00:00:00" value="00:00:00">
+                            </div>
+                            <div class="col-md-5">
+                                <label for="end_time" class="form-label small">End Time (HH:MM:SS)</label>
+                                <input type="text" class="form-control" id="end_time" name="end_time" placeholder="00:10:00">
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button" id="btn-set-full" class="btn btn-outline-secondary w-100">Full Video</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Quick Duration Presets</label>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="button" class="btn btn-sm btn-outline-primary duration-preset" data-duration="30">30 sec</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary duration-preset" data-duration="60">1 min</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary duration-preset" data-duration="300">5 min</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary duration-preset" data-duration="600">10 min</button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Download</button>
+                </form>
             </div>
         </div>
-
-        <!-- Footer -->
-        <footer class="footer text-center text-muted">
-            <div>
-                <p>This tool is for personal use only. Please respect copyright laws and YouTube's terms of service.</p>
-                <p>Powered by Flask and yt-dlp</p>
-            </div>
-        </footer>
     </div>
-
-    <!-- JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const urlInput = document.getElementById('video_url');
-            const videoPreview = document.getElementById('video-preview');
+            const videoUrlInput = document.getElementById('video_url');
             const videoInfo = document.getElementById('video-info');
-            const thumbnailContainer = document.getElementById('thumbnail-container');
+            const videoTitle = document.getElementById('video-title');
+            const videoDuration = document.getElementById('video-duration');
+            const startTimeInput = document.getElementById('start_time');
+            const endTimeInput = document.getElementById('end_time');
+            const btnSetFull = document.getElementById('btn-set-full');
+            const durationPresets = document.querySelectorAll('.duration-preset');
             
-            // Function to extract video ID from YouTube URL
-            function getYouTubeVideoId(url) {
-                const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-                const match = url.match(regExp);
-                return (match && match[7].length === 11) ? match[7] : false;
+            let timeoutId;
+            let videoData = null;
+            
+            // Fetch video info when URL changes
+            videoUrlInput.addEventListener('input', function() {
+                clearTimeout(timeoutId);
+                videoInfo.classList.add('d-none');
+                
+                const url = this.value.trim();
+                if (!url || url.length < 10) return;
+                
+                timeoutId = setTimeout(() => {
+                    fetchVideoInfo(url);
+                }, 1000);
+            });
+            
+            function fetchVideoInfo(url) {
+                const formData = new FormData();
+                formData.append('video_url', url);
+                
+                videoTitle.textContent = 'Loading...';
+                videoDuration.textContent = 'Loading...';
+                videoInfo.classList.remove('d-none');
+                
+                fetch('/get_video_info', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        videoTitle.textContent = 'Error: ' + data.error;
+                        videoDuration.textContent = 'N/A';
+                    } else {
+                        videoData = data;
+                        videoTitle.textContent = data.title;
+                        videoDuration.textContent = data.formatted_duration;
+                        endTimeInput.placeholder = data.formatted_duration;
+                    }
+                })
+                .catch(error => {
+                    videoTitle.textContent = 'Error fetching video info';
+                    videoDuration.textContent = 'N/A';
+                });
             }
             
-            // Show preview when URL is entered and get video duration
-            const endTimeInput = document.getElementById('end_time');
-            
-            urlInput.addEventListener('input', async function() {
-                const url = urlInput.value.trim();
-                const videoId = getYouTubeVideoId(url);
-                
-                if (videoId) {
-                    // Display video info and thumbnail
-                    videoInfo.innerHTML = `
-                        <h5>Video Preview</h5>
-                        <p class="text-muted">Video ID: ${videoId}</p>
-                        <p class="text-muted" id="video-duration">Loading video information...</p>
-                    `;
-                    
-                    thumbnailContainer.innerHTML = `
-                        <img src="https://img.youtube.com/vi/${videoId}/0.jpg" 
-                             alt="Video Thumbnail" class="youtube-preview img-fluid">
-                    `;
-                    
-                    videoPreview.classList.remove('d-none');
-                    
-                    // Fetch video information to get duration
-                    try {
-                        // Get video info from the server
-                        const response = await fetch(`/get_video_info/${videoId}`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.duration) {
-                                // Update the duration display
-                                document.getElementById('video-duration').textContent = 
-                                    `Duration: ${formatTime(data.duration)}`;
-                                
-                                // Set the end time field with the video duration
-                                endTimeInput.value = formatTime(data.duration);
-                                endTimeInput.placeholder = formatTime(data.duration);
-                            }
-                        } else {
-                            document.getElementById('video-duration').textContent = 
-                                "Couldn't load video duration";
-                        }
-                    } catch (error) {
-                        console.error("Error fetching video info:", error);
-                        document.getElementById('video-duration').textContent = 
-                            "Error loading video information";
-                    }
+            // Set full video duration
+            btnSetFull.addEventListener('click', function() {
+                startTimeInput.value = '00:00:00';
+                if (videoData && videoData.formatted_duration) {
+                    endTimeInput.value = videoData.formatted_duration;
                 } else {
-                    videoPreview.classList.add('d-none');
                     endTimeInput.value = '';
-                    endTimeInput.placeholder = 'Video end';
                 }
             });
             
-            // Function to format seconds to HH:MM:SS
-            function formatTime(seconds) {
-                seconds = Math.floor(seconds);
-                const hours = Math.floor(seconds / 3600);
-                const minutes = Math.floor((seconds % 3600) / 60);
-                const secs = seconds % 60;
-                
-                if (hours > 0) {
-                    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-                } else {
-                    return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-                }
-            }
-            
-            // Time preset buttons functionality
-            const startTimeInput = document.getElementById('start_time');
-            const presetButtons = document.querySelectorAll('.preset-btn');
-            const presetFullBtn = document.getElementById('preset-full');
-            const applyCustomPresetBtn = document.getElementById('apply-custom-preset');
-            const customMinutesInput = document.getElementById('custom-minutes');
-            const customSecondsInput = document.getElementById('custom-seconds');
-            
-            // Store the video duration for calculations
-            let videoDurationInSeconds = 0;
-            
-            // Handle preset duration buttons (30s, 1min, 5min, etc)
-            presetButtons.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const durationInSeconds = parseInt(this.dataset.duration);
-                    if (isNaN(durationInSeconds)) return;
+            // Duration presets
+            durationPresets.forEach(button => {
+                button.addEventListener('click', function() {
+                    const seconds = parseInt(this.dataset.duration);
+                    startTimeInput.value = '00:00:00';
                     
-                    // Set start time to 00:00:00
-                    startTimeInput.value = "00:00:00";
-                    
-                    // Calculate end time based on preset duration
-                    // If duration exceeds video length, use video length instead
-                    if (videoDurationInSeconds > 0) {
-                        const endSeconds = Math.min(durationInSeconds, videoDurationInSeconds);
-                        endTimeInput.value = formatTime(endSeconds);
-                    } else {
-                        endTimeInput.value = formatTime(durationInSeconds);
+                    if (seconds > 0) {
+                        const minutes = Math.floor(seconds / 60);
+                        const remainingSeconds = seconds % 60;
+                        endTimeInput.value = `00:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
                     }
                 });
-            });
-            
-            // Handle "Full Video" button
-            presetFullBtn.addEventListener('click', function() {
-                // Set start time to 00:00:00
-                startTimeInput.value = "00:00:00";
-                
-                // Set end time to full video duration if available
-                if (videoDurationInSeconds > 0) {
-                    endTimeInput.value = formatTime(videoDurationInSeconds);
-                } else {
-                    // If no video is loaded yet, clear the end time
-                    endTimeInput.value = '';
-                }
-            });
-            
-            // Handle custom preset
-            applyCustomPresetBtn.addEventListener('click', function() {
-                const minutes = parseInt(customMinutesInput.value) || 0;
-                const seconds = parseInt(customSecondsInput.value) || 0;
-                const totalSeconds = (minutes * 60) + seconds;
-                
-                if (totalSeconds > 0) {
-                    // Set start time to 00:00:00
-                    startTimeInput.value = "00:00:00";
-                    
-                    // Calculate end time based on custom duration
-                    // If duration exceeds video length, use video length instead
-                    if (videoDurationInSeconds > 0) {
-                        const endSeconds = Math.min(totalSeconds, videoDurationInSeconds);
-                        endTimeInput.value = formatTime(endSeconds);
-                    } else {
-                        endTimeInput.value = formatTime(totalSeconds);
-                    }
-                    
-                    // Close the custom preset collapse
-                    const customPresetCollapse = document.getElementById('customPresetCollapse');
-                    const bsCollapse = bootstrap.Collapse.getInstance(customPresetCollapse);
-                    if (bsCollapse) {
-                        bsCollapse.hide();
-                    }
-                }
-            });
-            
-            // Remove existing event listener and add a new one that also stores the duration
-            // First remove all existing input event listeners
-            const newUrlInput = urlInput.cloneNode(true);
-            urlInput.parentNode.replaceChild(newUrlInput, urlInput);
-            
-            // Re-reference the new input element
-            const urlInputNew = document.getElementById('video_url');
-            
-            // Add the updated event listener
-            urlInputNew.addEventListener('input', async function() {
-                const url = this.value.trim();
-                const videoId = getYouTubeVideoId(url);
-                
-                if (videoId) {
-                    // Display video info and thumbnail
-                    videoInfo.innerHTML = `
-                        <h5>Video Preview</h5>
-                        <p class="text-muted">Video ID: ${videoId}</p>
-                        <p class="text-muted" id="video-duration">Loading video information...</p>
-                    `;
-                    
-                    thumbnailContainer.innerHTML = `
-                        <img src="https://img.youtube.com/vi/${videoId}/0.jpg" 
-                             alt="Video Thumbnail" class="youtube-preview img-fluid">
-                    `;
-                    
-                    videoPreview.classList.remove('d-none');
-                    
-                    // Fetch video information to get duration
-                    try {
-                        // Get video info from the server
-                        const response = await fetch(`/get_video_info/${videoId}`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.duration) {
-                                // Store duration in seconds for calculations
-                                videoDurationInSeconds = data.duration;
-                                
-                                // Update the duration display
-                                document.getElementById('video-duration').textContent = 
-                                    `Duration: ${formatTime(data.duration)}`;
-                                
-                                // Set the end time field with the video duration
-                                endTimeInput.value = formatTime(data.duration);
-                                endTimeInput.placeholder = formatTime(data.duration);
-                            }
-                        } else {
-                            document.getElementById('video-duration').textContent = 
-                                "Couldn't load video duration";
-                            videoDurationInSeconds = 0;
-                        }
-                    } catch (error) {
-                        console.error("Error fetching video info:", error);
-                        document.getElementById('video-duration').textContent = 
-                            "Error loading video information";
-                        videoDurationInSeconds = 0;
-                    }
-                } else {
-                    videoPreview.classList.add('d-none');
-                    endTimeInput.value = '';
-                    endTimeInput.placeholder = 'Video end';
-                    videoDurationInSeconds = 0;
-                }
-            });
-            
-            // Time input validation
-            function isValidTimeFormat(timeStr) {
-                if (!timeStr) return true; // Empty is valid
-                
-                // Check MM:SS format
-                if (/^\d{1,2}:\d{2}$/.test(timeStr)) return true;
-                
-                // Check HH:MM:SS format
-                if (/^\d{1,2}:\d{2}:\d{2}$/.test(timeStr)) return true;
-                
-                return false;
-            }
-            
-            // Form submission - validation and loading state
-            const downloadForm = document.getElementById('download-form');
-            const downloadBtn = document.getElementById('download-btn');
-            
-            downloadForm.addEventListener('submit', function(event) {
-                // Validate URL - use the new reference
-                if (!urlInputNew.value.trim()) {
-                    alert('Please enter a YouTube URL');
-                    event.preventDefault();
-                    return false;
-                }
-                
-                const startTimeInput = document.getElementById('start_time');
-                // Validate time formats if provided
-                if (startTimeInput.value && !isValidTimeFormat(startTimeInput.value)) {
-                    alert('Invalid start time format. Please use MM:SS or HH:MM:SS');
-                    event.preventDefault();
-                    return false;
-                }
-                
-                if (endTimeInput.value && !isValidTimeFormat(endTimeInput.value)) {
-                    alert('Invalid end time format. Please use MM:SS or HH:MM:SS');
-                    event.preventDefault();
-                    return false;
-                }
-                
-                // All validations passed, show loading state
-                downloadBtn.innerHTML = `
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    Processing...
-                `;
-                downloadBtn.disabled = true;
             });
         });
     </script>

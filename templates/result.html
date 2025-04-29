@@ -1,163 +1,124 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Download Status - YouTube Video Downloader</title>
-    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <title>Download Result - YouTube Video Downloader</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container py-4">
-        <!-- Header -->
-        <header class="pb-3 mb-4 border-bottom">
-            <div class="d-flex align-items-center text-primary">
-                <i class="bi bi-youtube display-5 me-2"></i>
-                <h1 class="display-6 fw-bold">YouTube Video Downloader</h1>
-            </div>
+    <div class="container">
+        <header class="text-center my-5">
+            <h1>Download Status</h1>
+            <p class="lead">Your YouTube video download is in progress</p>
         </header>
 
-        <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
-        <!-- Main Content -->
-        <div class="form-container">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-cloud-download me-2"></i>Download Status</h5>
-                </div>
-                <div class="card-body text-center">
-                    <!-- Status Icon -->
-                    <div id="status-icon" class="result-icon">
-                        <i class="bi bi-arrow-repeat loading-icon"></i>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div id="download-info">
+                    <div class="mb-3">
+                        <h5>Progress:</h5>
+                        <div class="progress">
+                            <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
                     </div>
                     
-                    <!-- Status Text -->
-                    <h3 id="status-text" class="mb-4">Processing your download...</h3>
-                    
-                    <!-- Progress Bar -->
-                    <div class="progress mb-4" role="progressbar">
-                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+                    <div id="status-message" class="mb-3">
+                        <div class="alert alert-info">
+                            Initializing download...
+                        </div>
                     </div>
                     
-                    <!-- Status Details -->
-                    <div id="status-details" class="mb-4 text-muted">
-                        Initializing download...
+                    <div id="download-actions" class="d-none">
+                        <a id="download-link" href="#" class="btn btn-success mb-3 w-100">Download File</a>
                     </div>
                     
-                    <!-- Error Message -->
-                    <div id="error-message" class="alert alert-danger d-none mb-4"></div>
-                    
-                    <!-- Action Buttons -->
-                    <div id="action-buttons">
-                        <a href="{{ url_for('new_download') }}" class="btn btn-secondary me-2">
-                            <i class="bi bi-plus-circle me-2"></i>New Download
-                        </a>
-                        <a id="download-link" href="#" class="btn btn-primary d-none">
-                            <i class="bi bi-download me-2"></i>Download File
-                        </a>
-                    </div>
+                    <a href="{{ url_for('new_download') }}" class="btn btn-outline-primary w-100">Start New Download</a>
                 </div>
             </div>
         </div>
-
-        <!-- Footer -->
-        <footer class="footer text-center text-muted">
-            <div>
-                <p>This tool is for personal use only. Please respect copyright laws and YouTube's terms of service.</p>
-                <p>Powered by Flask and yt-dlp</p>
-            </div>
-        </footer>
     </div>
-
-    <!-- JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const downloadId = "{{ download_id }}";
             const progressBar = document.getElementById('progress-bar');
-            const statusText = document.getElementById('status-text');
-            const statusDetails = document.getElementById('status-details');
-            const errorMessage = document.getElementById('error-message');
+            const statusMessage = document.getElementById('status-message');
+            const downloadActions = document.getElementById('download-actions');
             const downloadLink = document.getElementById('download-link');
-            const statusIcon = document.getElementById('status-icon');
             
+            const downloadId = '{{ download_id }}';
             let checkInterval;
             
-            // Update status function
-            function updateStatus() {
+            function updateProgressBar(progress) {
+                progressBar.style.width = progress + '%';
+                progressBar.setAttribute('aria-valuenow', progress);
+                progressBar.textContent = progress + '%';
+            }
+            
+            function updateStatus(status, error) {
+                let message = '';
+                let alertClass = 'alert-info';
+                
+                if (status === 'starting') {
+                    message = 'Initializing download...';
+                } else if (status === 'downloading') {
+                    message = 'Downloading video...';
+                } else if (status === 'processing') {
+                    message = 'Processing video...';
+                    updateProgressBar(100);
+                } else if (status === 'complete') {
+                    message = 'Download complete! Click the button below to download your file.';
+                    alertClass = 'alert-success';
+                    
+                    // Show download button
+                    downloadActions.classList.remove('d-none');
+                    downloadLink.href = `/get_file/${downloadId}`;
+                    
+                    // Stop checking progress
+                    clearInterval(checkInterval);
+                } else if (status === 'error') {
+                    message = 'Error: ' + (error || 'An unknown error occurred');
+                    alertClass = 'alert-danger';
+                    
+                    // Stop checking progress
+                    clearInterval(checkInterval);
+                } else if (status === 'not_found') {
+                    message = 'Download not found. Please start a new download.';
+                    alertClass = 'alert-warning';
+                    
+                    // Stop checking progress
+                    clearInterval(checkInterval);
+                }
+                
+                statusMessage.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+            }
+            
+            function checkProgress() {
                 fetch(`/check_progress/${downloadId}`)
                     .then(response => response.json())
                     .then(data => {
-                        // Update progress bar
-                        progressBar.style.width = `${data.progress}%`;
-                        progressBar.setAttribute('aria-valuenow', data.progress);
-                        
-                        // Update status message based on status
-                        switch(data.status) {
-                            case 'starting':
-                                statusText.textContent = 'Preparing download...';
-                                statusDetails.textContent = 'Extracting video information...';
-                                statusIcon.innerHTML = '<i class="bi bi-arrow-repeat loading-icon"></i>';
-                                break;
-                                
-                            case 'downloading':
-                                statusText.textContent = 'Downloading in progress...';
-                                statusDetails.textContent = `Download progress: ${data.progress}%`;
-                                statusIcon.innerHTML = '<i class="bi bi-cloud-arrow-down-fill loading-icon"></i>';
-                                break;
-                                
-                            case 'processing':
-                                statusText.textContent = 'Processing video...';
-                                statusDetails.textContent = 'Almost done, preparing your file...';
-                                statusIcon.innerHTML = '<i class="bi bi-gear-fill loading-icon"></i>';
-                                break;
-                                
-                            case 'complete':
-                                statusText.textContent = 'Download complete!';
-                                statusDetails.textContent = 'Your video is ready to download.';
-                                statusIcon.innerHTML = '<i class="bi bi-check-circle-fill success-icon"></i>';
-                                downloadLink.classList.remove('d-none');
-                                downloadLink.href = `/get_file/${downloadId}`;
-                                clearInterval(checkInterval);
-                                break;
-                                
-                            case 'error':
-                                statusText.textContent = 'Download failed';
-                                statusDetails.textContent = 'There was an error processing your request.';
-                                statusIcon.innerHTML = '<i class="bi bi-exclamation-triangle-fill error-icon"></i>';
-                                errorMessage.textContent = data.error || 'Unknown error occurred';
-                                errorMessage.classList.remove('d-none');
-                                clearInterval(checkInterval);
-                                break;
-                                
-                            case 'not_found':
-                                statusText.textContent = 'Download not found';
-                                statusDetails.textContent = 'We couldn\'t find your download information.';
-                                statusIcon.innerHTML = '<i class="bi bi-question-circle-fill error-icon"></i>';
-                                clearInterval(checkInterval);
-                                break;
-                        }
+                        updateProgressBar(data.progress);
+                        updateStatus(data.status, data.error);
                     })
                     .catch(error => {
                         console.error('Error checking progress:', error);
-                        statusDetails.textContent = 'Error checking download status.';
                     });
             }
             
-            // Check progress immediately and then every 1 second
-            updateStatus();
-            checkInterval = setInterval(updateStatus, 1000);
+            // Check progress every second
+            checkProgress();
+            checkInterval = setInterval(checkProgress, 1000);
         });
     </script>
 </body>
