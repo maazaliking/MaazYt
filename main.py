@@ -20,6 +20,9 @@ app.secret_key = os.environ.get("SESSION_SECRET", "youtube-downloader-secret")
 # Store download progress info
 downloads = {}
 
+# Define common user agent for all requests
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+
 def find_ffmpeg():
     """Find ffmpeg executable path"""
     try:
@@ -107,6 +110,20 @@ def download_video(video_url, quality, start_time, end_time, download_id):
             'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
             'progress_hooks': [hook],
             'no_warnings': True,
+            # HTTP headers to bypass bot detection
+            'http_headers': {
+                'User-Agent': USER_AGENT,
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'DNT': '1',
+                'Connection': 'keep-alive',
+            },
+            # Additional options to help bypass rate limiting
+            'sleep_interval': 5,
+            'max_sleep_interval': 10,
+            'geo_bypass': True,
+            'geo_bypass_country': 'US',
         }
         
         # Add time segment using postprocessor arguments
@@ -252,7 +269,18 @@ def get_video_info():
         return jsonify({'error': 'Invalid YouTube URL'})
     
     try:
-        with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+        ydl_opts = {
+            'quiet': True,
+            'http_headers': {
+                'User-Agent': USER_AGENT,
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            },
+            'geo_bypass': True,
+            'geo_bypass_country': 'US',
+        }
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=False)
             
             if 'entries' in info:  # Playlist
